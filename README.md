@@ -3,7 +3,7 @@
 ### DS 5500 Fall 2018 --- Prof. Cody Dunne, Northeastern University
 
 ## Github Page
-https://asgundogdu.github.io/locationRec/
+https://antujn.github.io/YFCC-USA-Town-Recommendation/
 
 ## Motivation:
 
