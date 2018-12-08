@@ -1,0 +1,236 @@
+<html>
+
+<!-- Mirrored from www.datainterfaces.org/projects/flickr/ by HTTrack Website Copier/3.x [XR&CO'2014], Wed, 21 Nov 2018 23:10:01 GMT -->
+<head>
+    <title>Flickr Cities</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF8">
+    <link rel="stylesheet" type="text/css" href="css/leaflet.css">
+    <link rel="stylesheet" type="text/css" href="css/locationfilter.css">
+    <link rel="stylesheet" type="text/css" href="css/app.css">
+
+    <meta property="og:title" content="Flickr Cities" />
+    <meta property="og:image" content="images/thumbnail.jpg"/>  
+
+
+    <script type="text/template" id="tooltipTemplate">
+        <div class="header">
+            <div class="title">
+                <% print(title||'No title') %>
+            </div>
+            <% if (description) { %>
+            <div class="description">
+                <% print(description) %>
+            </div>
+            <% } %>
+            <div class="date">
+                <% print(d3.time.format.utc('%a %b %e %H:%M %Y')(date)) %>
+            </div>
+        </div>
+        <table>
+            <% if (capture_device) { %>
+            <tr>
+                <td class="key">Device</td>
+                <td><%- capture_device %></td>
+            </tr>
+            <% } %>
+            <% if (user_tags && user_tags.length) { %>
+            <tr>
+                <td class="key">Tags</td>
+                <td><% print(user_tags.join(', ')) %></td>
+            </tr>
+            <% } %>
+            <% if (download_url) { %>
+            <tr>
+                <td class="key">Image</td>
+                <td><img src="<%= download_url %>_s.jpg"></td>
+            </tr>
+            <% } %>
+        </table>
+    </script>
+
+    <script type="text/template" id="selectedComponentTemplate">
+        <div class='chartheader' style='margin-top: 20px;'><a href="#" class='closeImageSmall' id="clearComponent"></a><%- tags[0][0]  %> cluster</div>
+        <span class="intro">The following tags make up most of the "<%- tags[0][0] %>" cluster.</span>
+        <% 
+        var max = tags[0][1];
+        for (i in tags) { %>
+            <div class="tagbarmax">
+                <div class="tagbar" style="width: <%- (tags[i][1]/tags[0][1])*100  %>%"><%- tags[i][0] %></div>
+            </div>
+        <% } %>
+        <span class="intro" style="display: block">And here are some sample images.</span>
+        <%
+        for (i in images) {
+            var imageUrl = images[i][0];
+            var dotIdx = imageUrl.lastIndexOf('.');
+            imageUrl = imageUrl.substr(0, dotIdx) + '_s' + imageUrl.substr(dotIdx, 40);
+            var pageUrl = images[i][1];
+            %>
+            <a target="_blank" href="<%- pageUrl %>" class="thumbnail">
+                <img src="<%- imageUrl %>" />
+            </a>
+        <% } %>
+    </script>
+
+    <script type="text/template" id="cubeTemplate">
+        <div class="marker" style="transform: translateZ(<%- (height + 2) %>px);">
+            <div class="cube" >
+                <figure class="front" style="opacity: <%= opacity %>; background-color: <%= d3.lab(color).brighter(1.1) %>; width: <%= width %>px; height: <%= width %>px;" ></figure>
+                <figure class="back" style="opacity: <%= opacity %>; background-color: <%= d3.lab(color).darker(2.5) %>; width: <%= width %>px; height: <%= width %>px; transform: translateZ(-<%= height %>px);" ></figure>
+                <figure class="left" style="opacity: <%= opacity %>; background-color: <%= d3.lab(color).darker(2) %>; width: <%= width %>px; height: <%= height %>px; transform: rotateZ(90deg) rotateX(270deg) translateX(<%- width / 2 %>px) translateZ(<%- width / 2 %>px);" ></figure>
+                <figure class="right" style="opacity: <%= opacity %>; background-color: <%= d3.lab(color).darker(1.5) %>; width: <%= width %>px; height: <%= height %>px; transform: rotateZ(90deg) rotateX(270deg) translateX(<%- width / 2 %>px) translateZ(-<%- width / 2 %>px);" ></figure>
+                <figure class="top" style="opacity: <%= opacity %>; background-color: <%= color %>; width: <%= width %>px; height: <%= height %>px; transform: rotateX(-90deg) translateZ(<%= width %>px);" ></figure>
+                <figure class="bottom" style="opacity: <%= opacity %>; background-color: <%= color %>; width: <%= width %>px; height: <%= height %>px;" ></figure>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/template" id="pictureTemplate">
+        <div id="imgContainer">
+            <img id="img" src="<%= url %>.jpg" />
+        </div>
+        <div id="statsContainer">
+            <div id="pSTitle"><span class="statKey">Title: </span><%= title %></div>
+            <p id="pSDescription"><span class="statKey">Description:</span>
+                <%- description %>
+            </p>
+            <div id="pSTags"><span class="statKey">Tags: </span>
+                <%
+                _.forEach(tags, function(tag) { %>
+                    <span class="tag">
+                    <%-tag.toString().replace(/[\W_]+/g, ' ')%>
+                    </span>
+                <% }) %>
+            </div>
+            <div id="pSDate"><span class="statKey">EXIF date: </span><%= date %></div>
+            <div id="pSUrl"><span class="statKey">Source: <a target="_blank" href="<%= page_url %>"></span><%= page_url %></a></div>
+        </div>
+    </script>
+
+</head>
+<body>
+    <div id="container">
+        <div id="loader" style="display: none;"></div>
+        <div id="charts">
+            <div id="headerfixed">
+                <a target="_blank" href="http://www.isi.it/"><img id="logo" src="images/white-logo.png" /></a>
+                <h1>Flickr cities</h1>
+            </div>
+            <div id="header">
+                <a target="_blank" href="http://www.isi.it/"><img id="logo" src="images/white-logo.png" /></a>
+                <h1>Flickr cities</h1>
+                <h4><a target="_blank" href="http://www.isi.it/">ISI Foundation - Data Science Lab</a></h4>
+
+
+                <p><em>Flickr Cities</em> is an exploratory interface to browse the millions of images shared by <a target="_blank" href="https://labs.yahoo.com/">Yahoo Labs</a> in its amazing <a target="_blank" href="http://yahoolabs.tumblr.com/post/89783581601/one-hundred-million-creative-commons-flickr-images">Yahoo Flickr Creative Commons 100M dataset</a>. Filter the dataset by location, date and time, topic, photographer's nationality or combine the different parameters to see <a class="example" id="partyexample" href="#">weekend night parties</a>, <a class="example" id="brunchexample" href="#">sunday morning activities</a>, or the difference between <a class="example" id="DSLRexample" href="#">DSLR photographs</a> and <a class="example" id="smartphoneexample" href="#">smartphone snapshots</a>.</p>
+            </div>
+            <div id="loading" class="full">
+                <div class="chartheader">Please hold on, we're getting a lot of data.</div>
+                <span class="intro">This may take a while, like a couple of minutes or so.<br />
+                Once the data is loaded, you will be able to explore the dataset by filtering the different on date and time, tags, location and more.</span>
+                <ul class="loadingstage">
+                    <li class="download">
+                        <div class="progressbar">
+                            <div class="loaded"></div>
+                            <span>Downloading photo metadata</span>
+                        </div>
+                    </li>
+                    <li class="parsing">Parsing metadata</li>
+                    <li class="indexing">Creating filter indexes</li>
+                    <li class="end">Done</li>
+                </ul>
+            </div>
+            <div id="components-panel-container">
+                <div id="components-panel">
+                    <div class="chartheader">Topic clusters<a href="#" class='closeImage' id="closeClusters">Back to filters</a></div>
+                    <span class="intro">The following clusters represent groups of photos that share some tags and are taken in similar locations. Clicking on any given cluster you can see the tags that make up the group of images, and the locations in which it is most present.</span>
+                    <span class="loading">Calculating components...</span>
+                </div>
+            </div>
+            <div id="picture-panel-container">
+                <div id="picture-panel">
+                    <div class='chartheader'>Picture<a href="#" class='closeImage' id="clearPicture">Back to filters</a></div>
+                    <span class="loading">Loading picture...</span>
+                    <div id="imagecontents"></div>
+                </div>
+            </div>
+            <div id="components-chart" class="chart full">
+                <div class='chartheader'>Topic clusters</div>
+            </div>
+            <div id="date-chart" class="chart full">
+                <div class='chartheader'>Date<a href="#" class='clearImage' id="clearDate"></a></div>
+            </div>
+            <div id="hour-chart" class="chart third">
+                <div class='chartheader'>Hour<a href="#" class='clearImage' id="clearHour"></a></div>
+            </div>
+            <div id="weekday-chart" class="chart third">
+                <div class='chartheader'>Weekday<a href="#" class='clearImage' id="clearWeekday"></a></div>
+            </div>
+            <div id="camera-chart" class="chart third">
+                <div class='chartheader'>Device<a href="#" class='clearImage' id="clearCamera"></a></div>
+            </div>
+            <div id="tags-chart" class="chart full">
+                <div class='chartheader'>Tags<a href="#" class='clearImage' id="clearTags"></a></div>
+                <input type="text" id="tagSearch" placeholder="Search tags" class="tagSearch" /><a id="tagSearchClear" class="tagSearchClear" href="#"></a>
+            </div>
+            <div id="countries-chart" class="chart full">
+                <div class='chartheader'>Countries<a href="#" class='clearImage' id="clearCountries"></a></div>
+                <input type="text" id="countrySearch" placeholder="Search countries" class="tagSearch" /><a id="countrySearchClear" class="tagSearchClear" href="#"></a>
+                <div id="continents"></div>
+            </div>
+            <div id="footer" class="full">
+                <h4>Credits</h4>
+                <p>
+                    Flickr Cities has been designed and developed by <a target="_blank" href="http://datainterfaces.org/">DataInterfaces</a>, a col­lab­o­ra­tive lab­o­ra­tory founded by <a target="_blank" href="http://www.isi.it/">Fondazione ISI - Data Science Lab</a> and Politecnico di Milano. The dataset is provided by <a target="_blank" href="http://yahoolabs.tumblr.com/post/89783581601/one-hundred-million-creative-commons-flickr-images">Yahoo Labs</a>.
+                    This project was partially supported by the <a target="_blank" href="http://knowescape.org/">KNOWeSCAPE</a> COST Action TD1210.
+                    For more information see the DataInterfaces <a target="_blank" href="http://www.datainterfaces.org/2015/09/flickr-cities/">blog post</a>.<br />
+                </p>
+                <h4>TEAM</h4>
+                <p>
+                    <a href="mailto:marcoq@gmail.com">Marco Quaggiotto</a><br />
+                    Rob Poelmans<br />
+                    Mariano Beiró<br />
+                    André Panisson<br />
+                    Ciro Cattuto<br />
+                    <br />
+                    <i>Rob Poelmans participated thanks to support from <br />
+                        <a target="_blank" href="http://www.erasmushogeschool.be/international">Erasmus University College Brussels</a>
+                    </i><br />
+                </p>
+                <h4>DATASET</h4>
+                <p>
+                    "<a href="http://arxiv.org/abs/1503.01817">The New Data and New Challenges in Multimedia Research</a>" by Bart Thomee, David A. Shamma, Gerald Friedland, Benjamin Elizalde, Karl Ni, Douglas Poland, Damian Borth, and Li-Jia Li, arXiv:1503.01817.
+                </p>
+            </div>
+        </div>
+        <div id="stage" >
+            <a id="untilt"></a>
+            <div id="tilter">
+                <div id="map">
+                    <!-- <a href="#" id="selectArea"><img src="images/selectArea.png" /></a> -->
+                    <div id="totals"><span id="active">-</span> of <span id="total">-</span> data selected.</div>
+                </div>
+            </div>
+        </div>
+        <div id="cities">
+            <div id="cityContainer"></div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="js/libs.js"></script>
+    <script type="text/javascript" src="js/app.js"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','../../../www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-4636733-6', 'auto');
+  ga('send', 'pageview');
+
+    </script>
+
+</body>
+
+<!-- Mirrored from www.datainterfaces.org/projects/flickr/ by HTTrack Website Copier/3.x [XR&CO'2014], Wed, 21 Nov 2018 23:10:04 GMT -->
+</html>
