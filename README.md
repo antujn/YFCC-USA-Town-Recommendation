@@ -145,7 +145,9 @@ Evaluation and Results
 ![alt text](https://github.com/antujn/YFCC-USA-Town-Recommendation/blob/master/docs/documentation/Readme/Image_011.png)
 
 Lastly, we have Evaluation and Results on the third tab of the UI.
+
 The main panel shows an interactive leaflet map with animated uncopyrighted icons to encode visited towns (bnw flag) and recommended towns (colored flag) with details-on-demand hover functionality.
+
 The side-bar panel accommodates the input elements for the final set of parameters the user wants his recommendations to be based on and a ranked list of results/recommendations for a random user which automatically gets selected from the database.
 
 ## Conclusion:
