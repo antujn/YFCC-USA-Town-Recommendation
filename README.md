@@ -158,7 +158,7 @@ Even though this project was a simple implementation of recommendation systems u
 
 ## Evaluation Plan:
 
-In order to implement this design in real-time and real-world, an evaluation plan to measure the functionality, effectiveness, efficiency, usability and usefulness of the town recommendation system is required [source].
+In order to implement this design in real-time and real-world, an evaluation plan to measure the functionality, effectiveness, efficiency, usability and usefulness of the town recommendation system is required.
 
 First, offline evaluations on simulated data, using streaming of existing data, can be run at different time splits for training and test sets. This will basically enable us to see the model's robustness for changing data and will help in estimating how frequently we need to retrain the model. All of these offline evaluations should require around 5%-10% of the total budget planned for evaluation plan.
 
